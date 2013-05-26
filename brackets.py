@@ -1,19 +1,5 @@
-import re
+import os, re
 
-def get_eval(count):
-    for i in range(count):
-        yield i
-        
-print list(get_eval(10))
-
-tasks = '''
-5(x+4)
-5x-2(x-3)
-a(2b-c+3d)
-(x+3)(x+1)
-5x+3(2y-4(3x+y))
-'''
-#tasks='(x+3)(x+1)'
 FREE_MEMBER = '~'
 
 class Member(object):
@@ -162,18 +148,24 @@ def polynom(expression):
     e = re.sub(r'(\d+)', r'DIGIT(\1)', e)
     return eval(e)
 
-with open('test.html', 'w') as f:
-    f.write('<table border=1><tr><th>Task</th><th>Answer</th><th>Code</th>')
-    total_code = 0
-    for task in tasks.split('\n'):
-        if not task.strip(): continue
-        p = polynom(task)        
-        task = re.sub(r'\^(\S)', r'<sup>\1</sup>', task)
-        answer = re.sub(r'\^(\S)', r'<sup>\1</sup>', str(p))
-        code = p.code()
-        total_code += code
-        f.write('<tr><td>' + task + '</td><td>' + answer + '</td><td>' + str(code) + '</td></tr>')
-#        print '%s => %s [%d]' % (task, p, p.code())
-    f.write('<tr><td/><td/><td>%s</td></tr>' % total_code)
-    f.write('</table>')
+def process_file(file):
+    tasks = open(file).readlines()
+    filename, ext = os.path.splitext(file)
+    with open(filename + '.html', 'w') as f:
+        f.write('<table border=1><tr><th>Task</th><th>Answer</th><th>Code</th>')
+        total_code = 0
+        for task in tasks:
+            if not task.strip(): continue
+            p = polynom(task)        
+            task = re.sub(r'\^(\S)', r'<sup>\1</sup>', task)
+            answer = re.sub(r'\^(\S)', r'<sup>\1</sup>', str(p))
+            code = p.code()
+            total_code += code
+            f.write('<tr><td>' + task + '</td><td>' + answer + '</td><td>' + str(code) + '</td></tr>')
+        f.write('<tr><td/><td/><td>%s</td></tr>' % total_code)
+        f.write('</table>')
         
+for file in os.listdir('.'):
+    if not file.endswith('.txt'): continue
+    process_file(file)
+    
