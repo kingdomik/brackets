@@ -22,8 +22,8 @@ class Member(object):
         return self.__str__() == other.__str__()
      
     def __cmp__(self, other):
-        key1 = sorted([(v, -p) for v,p in sorted(self.vars.items())])
-        key2 = sorted([(v, -p) for v,p in sorted(other.vars.items())])
+        key1 = sorted([(-p, v) for v,p in sorted(self.vars.items())])
+        key2 = sorted([(-p, v) for v,p in sorted(other.vars.items())])
         return cmp(key1, key2)
         
     def __hash__(self):
@@ -64,14 +64,14 @@ class Polynom(object):
     def code(self):
         result = 0
         for v in self.polynom.values():
-            result += abs(v)
+            result += v
         return result
             
     def __str__(self):
         result = ''
         for member,count in sorted(self.polynom.items()):
             # Free member
-            if member.is_free():
+            if member.is_free() and count != 0:
                 result += '%+d' % count 
             # Skip 1 and -1 multiplicatgor
             elif count == 1:
@@ -139,9 +139,13 @@ class VAR(Polynom):
 
 def polynom(expression):
     e = expression
+    if e.startswith('-'):
+        e = '0' + e
+    e = re.sub(r'([a-z])([a-z])', r'\1*\2', e)
     e = re.sub(r'(\d)([a-z])', r'\1*\2', e)
     e = re.sub(r'(\d)(\()', r'\1*\2', e)
     e = re.sub(r'([a-z])(\()', r'\1*\2', e)
+    e = re.sub(r'(\))([a-z])', r'\1*\2', e)
     e = re.sub(r'(\))(\()', r'\1*\2', e)
     e = re.sub(r'\^', r'**', e)
     e = re.sub(r'([a-z]+)', r'VAR("\1")', e)
@@ -150,19 +154,23 @@ def polynom(expression):
 
 def process_file(file):
     tasks = open(file).readlines()
+#    tasks = ['(p+q)pq']
     filename, ext = os.path.splitext(file)
     with open(filename + '.html', 'w') as f:
-        f.write('<table border=1><tr><th>Task</th><th>Answer</th><th>Code</th>')
+        f.write('%s' % filename)
+        f.write('<table border=1><tr><th>Num</th><th>Task</th><th>Answer</th><th>Code</th>')
         total_code = 0
+        i = 0
         for task in tasks:
             if not task.strip(): continue
+            i += 1
             p = polynom(task)        
             task = re.sub(r'\^(\S)', r'<sup>\1</sup>', task)
             answer = re.sub(r'\^(\S)', r'<sup>\1</sup>', str(p))
             code = p.code()
             total_code += code
-            f.write('<tr><td>' + task + '</td><td>' + answer + '</td><td>' + str(code) + '</td></tr>')
-        f.write('<tr><td/><td/><td>%s</td></tr>' % total_code)
+            f.write('<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td></tr>' % (i, task, answer, code))
+        f.write('<tr><td/><td/><td/><td>%s</td></tr>' % total_code)
         f.write('</table>')
         
 for file in os.listdir('.'):
